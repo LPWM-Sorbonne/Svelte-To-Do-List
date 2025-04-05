@@ -23,6 +23,7 @@ Un format récursif type :
         { label: "Couper les légumes", checked: true },
         { label: "Cuire le riz", checked: false }
       ]
+        
     }
   ]
 } 
