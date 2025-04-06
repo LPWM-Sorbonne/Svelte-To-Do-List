@@ -1,38 +1,42 @@
-# sv
+# ✅ Svelte To-Do-List 
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Une application de gestion de tâches moderne, responsive et élégante, construite avec **Svelte**.
 
-## Creating a project
+---
 
-If you're seeing this, you've probably already done this step. Congrats!
+## ✨ Fonctionnalités
+
+- 🔹 Création de **listes de tâches personnalisées**
+- 📝 Ajout, édition, suppression et duplication de tâches
+- 📁 Prise en charge des **sous-tâches** imbriquées
+- ♻️ **Duplication complète** d’une liste avec son contenu
+- 💾 Sauvegarde persistante via `localStorage`
+
+---
+
+## 🖥️ Aperçu de l’interface
+
+- Page d’accueil : gestion des listes
+- Page de liste : affichage imbriqué des tâches avec indentation dynamique
+- Utilisation de `localStorage` pour stocker chaque liste et son contenu indépendamment (`todolist-<id>`)
+
+---
+
+## 🚀 Démarrage rapide
+
+### 📦 Prérequis
+
+- [Node.js](https://nodejs.org/) ≥ v16
+- [pnpm](https://pnpm.io) ou `npm`/`yarn`
+
+### 🔧 Installation
 
 ```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
+git clone https://github.com/LPWM-Sorbonne/Svelte-To-Do-List.git
+cd Svelte-To-Do-List
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
+## 👨‍💻 Auteur
 
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Théo DISY, Ibrahima DIALLO, Thanus SHANTHAKUMAR.
