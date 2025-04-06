@@ -1,4 +1,4 @@
-<script>
+ <script>
     // ⛑️ Auto-import pour éviter le bug récursif "TaskItem is not defined"
     import TaskItem from "./TaskItem.svelte";
   
@@ -10,7 +10,7 @@
     export let addSubtaskTo;
   </script>
   
-  <div class="task" style="margin-left: {Math.min(level * 16, 64)}px">
+  <div class="task" style="margin-left: 16px">
     <div class="task-row">
       <input
         type="checkbox"
@@ -63,6 +63,8 @@
       border-radius: 8px;
       transition: background-color 0.3s ease;
       border: 1px solid #e0e0e0;
+      
+      min-width: 250px;
     }
   
     .task-row:hover {

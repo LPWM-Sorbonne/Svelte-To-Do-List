@@ -1,51 +1,68 @@
 <script>
+  // Import utilisé pour le fonctionnement de la page
   import { page } from "$app/stores";
   import TaskItem from "$lib/components/TaskItem.svelte";
   import { onMount } from "svelte";
 
+  // Initialisation des variables
   let listId = "";
+  let listTitle = "";
   let tasks = [];
   let selectedTaskIds = new Set();
   let ready = false;
+  let errorMessage = "";
 
   function getStorageKey() {
     return `todolist-${listId}`;
   }
 
   onMount(() => {
-    const unsubscribe = page.subscribe(({ params }) => {
-      if (params.id && params.id.trim() !== "") {
-        listId = params.id;
+  const unsubscribe = page.subscribe(({ params }) => {
+    if (params.id && params.id.trim() !== "") {
+      listId = params.id;
 
-        if (typeof localStorage !== 'undefined') {
-          const key = getStorageKey();
-          const raw = localStorage.getItem(key);
+      if (typeof localStorage !== "undefined") {
+        const key = "todolists"; // On va chercher toutes les listes
+        const raw = localStorage.getItem(key);
 
-          try {
-            const parsed = JSON.parse(raw);
-            tasks = Array.isArray(parsed) ? parsed : [];
-          } catch (e) {
-            console.error("Erreur JSON corrompu :", e);
-            tasks = [];
+        try {
+          const parsed = JSON.parse(raw);
+          const foundList = parsed.find((liste) => liste.id === listId); // Cherche la liste par ID
+
+          if (foundList) {
+            listTitle = foundList.nom;
+            tasks = foundList.tasks; // On charge les tâches de la liste
           }
+
+          ready = true;
+        } catch (e) {
+          console.error("Erreur JSON corrompu :", e);
+          tasks = [];
         }
-
-        ready = true;
       }
-    });
-
-    return unsubscribe;
+    }
   });
 
-  function saveTasks() {
-    if (!ready || !listId || typeof localStorage === 'undefined') return;
+  return unsubscribe;
+});
 
-    try {
-      localStorage.setItem(getStorageKey(), JSON.stringify(tasks));
-    } catch (e) {
-      console.error("Erreur de sauvegarde localStorage :", e);
-    }
+function saveTasks() {
+  if (!ready || !listId || typeof localStorage === "undefined") return;
+
+  try {
+    const key = "todolists";
+    const raw = localStorage.getItem(key);
+    const parsed = JSON.parse(raw);
+
+    const updatedLists = parsed.map((list) =>
+      list.id === listId ? { ...list, tasks } : list
+    );
+
+    localStorage.setItem(key, JSON.stringify(updatedLists));
+  } catch (e) {
+    console.error("Erreur de sauvegarde localStorage :", e);
   }
+}
 
   function findTaskById(list, id) {
     for (let task of list) {
@@ -66,7 +83,7 @@
   }
 
   function deleteTaskById(list, ids) {
-    return list.filter(task => {
+    return list.filter((task) => {
       if (ids.has(task.id)) return false;
       task.children = deleteTaskById(task.children, ids);
       return true;
@@ -78,7 +95,7 @@
       ...task,
       id: Date.now() + Math.random(),
       text: task.text + " (copie)",
-      children: task.children.map(duplicateTask)
+      children: task.children.map(duplicateTask),
     };
   }
 
@@ -108,7 +125,7 @@
       id: Date.now(),
       text: "Nouvelle sous-tâche",
       completed: false,
-      children: []
+      children: [],
     };
     task.children = [...task.children, subtask];
     tasks = [...tasks]; // ensure reactivity
@@ -118,10 +135,24 @@
   function handleAdd() {
     const task = {
       id: Date.now(),
-      text: selectedTaskIds.size ? "Nouvelle sous-tâche" : "Nouvelle tâche",
       completed: false,
-      children: []
+      children: [],
     };
+
+    const text = prompt("Modifiez le texte de la tâche :", task.text);
+// Vérifier si l'utilisateur a saisi un texte ou annulé
+if (text === null) {
+    // L'utilisateur a annulé, on ne crée pas la tâche
+    return;
+  }
+
+  // Si l'utilisateur a saisi quelque chose, on met à jour la tâche
+  if (text.trim() !== "") {
+    task.text = text;
+  } else {
+    // Si le texte est vide, on peut éventuellement définir un texte par défaut
+    task.text = "Tâche sans nom";
+  }
 
     if (selectedTaskIds.size) {
       for (const id of selectedTaskIds) {
@@ -163,6 +194,13 @@
   }
 
   function handleDuplicate() {
+    // Vérifier si plus d'une tâche est sélectionnée
+    if (selectedTaskIds.size > 1) {
+      errorMessage = "Veuillez sélectionner une seule tâche à la fois pour la dupliquer.";
+      return;
+    }
+
+    errorMessage = "";
     const copies = [];
 
     for (const id of selectedTaskIds) {
@@ -188,6 +226,46 @@
   }
 </script>
 
+<div class="container">
+  <a href="/">← Retour</a>
+  <h1>{listTitle}</h1>
+
+  <div class="buttons">
+    <button on:click={handleAdd} disabled={!ready}>Ajouter</button>
+    <button
+      on:click={handleEdit}
+      disabled={selectedTaskIds.size !== 1 || !ready}>Modifier</button
+    >
+    <button
+      on:click={handleDuplicate}
+      disabled={selectedTaskIds.size === 0 || !ready}>Dupliquer</button
+    >
+    <button
+      on:click={handleDelete}
+      disabled={selectedTaskIds.size === 0 || !ready}>Supprimer</button
+    >
+  </div>
+
+  {#if errorMessage}
+    <div class="error-message">{errorMessage}</div>
+  {/if}
+
+  <div class="task-list">
+    {#if ready}
+      {#each tasks as task (task.id)}
+        <TaskItem
+          {task}
+          level={0}
+          {selectedTaskIds}
+          {selectTask}
+          {toggleCheck}
+          {addSubtaskTo}
+        />
+      {/each}
+    {/if}
+  </div>
+</div>
+
 <style>
   :root {
     --primary-color: #007aff;
@@ -196,16 +274,9 @@
     --secondary-text-color: #636366;
   }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    margin: 0;
-  }
-
   .container {
     padding: 16px;
-    max-width: 600px;
+    max-width: 850px;
     margin: auto;
   }
 
@@ -216,15 +287,22 @@
     flex-wrap: wrap;
   }
 
+  .error-message {
+    color: red;
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
   .task-list {
     background: #fff;
     border-radius: 12px;
     padding: 16px;
     border: 1px solid #ddd;
-    position: absolute;
     margin: auto;
     align-items: center;
     max-width: 100%;
+    overflow-x: scroll;
   }
 
   button {
@@ -270,30 +348,3 @@
     }
   }
 </style>
-
-<div class="container">
-  <a href="/">← Retour</a>
-  <h1>Ma liste</h1>
-
-  <div class="buttons">
-    <button on:click={handleAdd} disabled={!ready}>Ajouter</button>
-    <button on:click={handleEdit} disabled={selectedTaskIds.size !== 1 || !ready}>Modifier</button>
-    <button on:click={handleDuplicate} disabled={selectedTaskIds.size === 0 || !ready}>Dupliquer</button>
-    <button on:click={handleDelete} disabled={selectedTaskIds.size === 0 || !ready}>Supprimer</button>
-  </div>
-
-  <div class="task-list">
-    {#if ready}
-      {#each tasks as task (task.id)}
-        <TaskItem
-          {task}
-          level={0}
-          {selectedTaskIds}
-          {selectTask}
-          {toggleCheck}
-          {addSubtaskTo}
-        />
-      {/each}
-    {/if}
-  </div>
-</div>
