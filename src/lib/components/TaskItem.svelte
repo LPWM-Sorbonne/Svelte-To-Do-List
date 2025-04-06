@@ -4,27 +4,23 @@
   
     export let task;
     export let level = 0;
-    export let selectedTaskIds;
-    export let selectTask;
-    export let toggleCheck;
-    export let addSubtaskTo;
+    export let SelectionnerTacheIDs;
+    export let TacheSelectionner;
+    export let ChangerEtat;
+    export let CreeSousCategorie;
   </script>
   
   <div class="task" style="margin-left: 16px">
     <div class="task-row">
       <input
         type="checkbox"
-        checked={selectedTaskIds.has(task.id)}
-        on:change={() => toggleCheck(task)}
+        checked={SelectionnerTacheIDs.has(task.id)}
+        on:change={() => ChangerEtat(task)}
       />
-      <span
-        class:selected={selectedTaskIds.has(task.id)}
-        class:completed={task.completed}
-        on:click={() => selectTask(task.id)}
-      >
+      <span role="button" tabindex="0" class:selected={SelectionnerTacheIDs.has(task.id)} class:completed={task.completed} on:click={() => TacheSelectionner(task.id)} on:keydown={(e) => e.key === "Enter" && TacheSelectionner(task.id)}>
         {task.text}
       </span>
-      <button class="subtask-btn" on:click={() => addSubtaskTo(task)}>Sous-liste</button>
+      <button class="subtask-btn" on:click={() => CreeSousCategorie(task)}>Sous-liste</button>
     </div>
   
     {#if task.children && task.children.length > 0}
@@ -33,10 +29,10 @@
           <TaskItem
             task={child}
             level={level + 1}
-            {selectedTaskIds}
-            {selectTask}
-            {toggleCheck}
-            {addSubtaskTo}
+            {SelectionnerTacheIDs}
+            {TacheSelectionner}
+            {ChangerEtat}
+            {CreeSousCategorie}
           />
         {/each}
       </div>

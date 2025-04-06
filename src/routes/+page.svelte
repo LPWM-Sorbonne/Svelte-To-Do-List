@@ -1,118 +1,156 @@
 <script>
   import { onMount } from "svelte";
 
-  // Initialisation de variable
+  // Initialisation des variables
   let listes = [];
-  let message = "";
+  let message = { texte: "", type: "" };
 
-  function sauvegardeListes() {
-    localStorage.setItem("todolists", JSON.stringify(listes));
-  }
-
-  function creationListe() {
-  const nom = prompt("Nom de la nouvelle liste :");
-  if (nom) {
-    let id = nom.toLowerCase().replace(/\s+/g, "-");
-    let suffixe = 1;
-    let idUnique = id;
-
-    while (listes.some((liste) => liste.id === idUnique)) {
-      idUnique = `${id}-${suffixe}`;
-      suffixe++;
-    }
-
-    const newList = {
-      id: idUnique,
-      nom: nom,
-      tasks: []  // Ici, tu initialises les tâches de la liste avec un tableau vide.
-    };
-
-    listes = [...listes, newList];
-    sauvegardeListes();
-    message = "Liste créée avec succès !";
-
-    setTimeout(() => (message = ""), 5000);
-  } else {
-    message = "Erreur : Nom invalide.";
-    setTimeout(() => (message = ""), 5000);
-  }
-}
-
-  function supprimerListe(id) {
-    if (confirm("Souhaitez-vous supprimer cette liste ?")) {
-      listes = listes.filter((liste) => liste.id !== id);
-      sauvegardeListes();
-    }
-  }
-
-  function modifierListe(liste) {
-    const nouveauNom = prompt("Nouveau nom pour la liste :", liste.nom);
-    if (nouveauNom && nouveauNom.trim() !== "") {
-      // Mise à jour du nom et de l'id (à cause du slug)
-      const newId = nouveauNom.toLowerCase().replace(/\s+/g, "-");
-      let suffixe = 1;
-      let idUnique = newId;
-
-      while (listes.some((l) => l.id === idUnique && l !== liste)) {
-        idUnique = `${newId}-${suffixe++}`;
-      }
-
-      liste.nom = nouveauNom;
-      liste.id = idUnique;
-
-      listes = [...listes]; // Re-trigger reactivité
-      sauvegardeListes();
-      message = "Liste renommée avec succès !";
-      setTimeout(() => (message = ""), 4000);
-    }
-  }
-
-  function dupliquerListe(liste) {
-  const copieNom = prompt("Nom pour la copie :", liste.nom + " (copie)");
-  if (copieNom && copieNom.trim() !== "") {
-    let baseId = copieNom.toLowerCase().replace(/\s+/g, "-");
-    let suffixe = 1;
-    let idUnique = baseId;
-
-    while (listes.some((l) => l.id === idUnique)) {
-      idUnique = `${baseId}-${suffixe++}`;
-    }
-
-    // Dupliquer les tâches de la liste
-    const dupliquerTaches = (taches) => {
-      return taches.map((tache) => ({
-        ...tache,
-        id: Date.now() + Math.random(), // On génère un nouvel ID pour chaque tâche
-        children: dupliquerTaches(tache.children), // Dupliquer les sous-tâches récursivement
-      }));
-    };
-
-    // Créer la nouvelle liste avec les tâches dupliquées
-    const nouvelleListe = {
-      id: idUnique,
-      nom: copieNom,
-      tasks: dupliquerTaches(liste.tasks), // Dupliquer les tâches de la liste
-    };
-
-    listes = [...listes, nouvelleListe];
-    sauvegardeListes();
-    message = "Liste dupliquée avec succès !";
-    setTimeout(() => (message = ""), 4000);
-  }
-}
-
-  onMount(() => {
+   // Au chargement de la page on recup les listes depuis le localStorage
+   onMount(() => {
     const data = localStorage.getItem("todolists");
     if (data) {
       try {
-        const parsedData = JSON.parse(data);
-        listes = Array.isArray(parsedData) ? parsedData : [];
+        // Parse les données JSON et vérifie que c’est bien un tableau
+        const fouillerData = JSON.parse(data);
+        listes = Array.isArray(fouillerData) ? fouillerData : [];
       } catch (error) {
+        // affiche l’erreur et vide les listes
         console.error("Erreur de recherche dans le localStorage :", error);
         listes = [];
       }
     }
   });
+
+  // Sauvegarde toutes les listes dans le localstorage en ayant comme cle "todolists"
+  function sauvegardeListes() {
+    localStorage.setItem("todolists", JSON.stringify(listes));
+  }
+
+  //Fonction qui cree une nouvelle liste après avoir demande un nom a l'utilisateur
+  function creationListe() {
+    const nom = prompt("Nom de la nouvelle liste :");
+
+    // Si le nom n'est pas vide on nettoie l'entree pour generer un id  sous la forme minuscule et tiret
+    if (nom && nom.trim() !== "") {
+      let id = nom.toLowerCase().replace(/\s+/g, "-");
+      let suffixe = 1;
+      let idUnique = id;
+
+      // Verifie si l'id existe et si oui on ajoute un suffixe pour le rendre unique
+      while (listes.some((liste) => liste.id === idUnique)) {
+        idUnique = `${id}-${suffixe}`;
+        suffixe++;
+      }
+
+      // On cree un objet liste avec un tableau vide pour les taches
+      const nouvelleListe = {
+        id: idUnique,
+        nom: nom,
+        tasks: [],
+      };
+
+      //Ajout de la nouvelle liste dans le tableau et ensuite on sauvegarde
+      listes = [...listes, nouvelleListe];
+      sauvegardeListes();
+
+      // Affiche un message temporaire de succès
+      afficherMessage("Liste créée avec succès !", "success");
+    } else {
+      return;
+    }
+  }
+
+  // fonction qui modifie le nom et l'id d'une liste existante
+  function modifierListe(liste) {
+    const nouveauNom = prompt("Nouveau nom pour la liste :", liste.nom);
+    if (nouveauNom && nouveauNom.trim() !== "") {
+      // generation d'un nouvel id en fonction du nouveau nom
+      const nouveauId = nouveauNom.toLowerCase().replace(/\s+/g, "-");
+      let suffixe = 1;
+      let idUnique = nouveauId;
+
+      // check que le nouvel id est unique
+      while (listes.some((l) => l.id === idUnique && l !== liste)) {
+        idUnique = `${nouveauId}-${suffixe++}`;
+      }
+
+      // Met a jour les valeurs dans la liste
+      liste.nom = nouveauNom;
+      liste.id = idUnique;
+
+      // Force la reactivite de Svelte
+      listes = [...listes];
+      sauvegardeListes();
+
+      // Message temporaire
+      afficherMessage("Liste renommé avec succès !", "success");
+    } else {
+      return;
+    }
+  }
+
+  // fonction qui duplique une liste et ses taches associe
+  function dupliquerListe(liste) {
+    const copieNom = prompt("Nom pour la copie :", liste.nom + " (copie)");
+    if (copieNom && copieNom.trim() !== "") {
+      // generation d'un nouvel id en fonction du nom de copie
+      let idDeBase = copieNom.toLowerCase().replace(/\s+/g, "-");
+      let suffixe = 1;
+      let idUnique = idDeBase;
+
+      // verifie que l'id de la copie n'existe pas
+      while (listes.some((l) => l.id === idUnique)) {
+        idUnique = `${idDeBase}-${suffixe++}`;
+      }
+
+      // autre fonction qui permet de  dupliquer les taches et sous tache de facon recursive
+      function dupliquerTaches(taches) {
+        return taches.map((tache) => ({
+          ...tache,
+          // creation du nouvelle id en fonction de la date
+          id: Date.now() + Math.random(), 
+          // récursivite de la duplication des taches
+          children: dupliquerTaches(tache.children || []), 
+        }));
+      }
+
+      // Créer la nouvelle liste avec les tâches dupliquées
+      const nouvelleListe = {
+        id: idUnique,
+        nom: copieNom,
+        tasks: dupliquerTaches(liste.tasks),
+      };
+
+      // Force la reactivite de Svelte
+      listes = [...listes, nouvelleListe];
+      sauvegardeListes();
+
+      // Message temporaire
+      afficherMessage("Liste dupliqué avec succès !", "success");
+    } else {
+      return;
+    }
+  }
+
+  // Supprime une liste après confirmation
+  function supprimerListe(id) {
+    if (confirm("Souhaitez-vous supprimer cette liste ?")) {
+      // Filtre la liste pour exclure celle avec l'id
+      listes = listes.filter((liste) => liste.id !== id);
+      sauvegardeListes();
+
+      //Message temporaire
+      afficherMessage("Liste supprimer avec succès !", "success");
+    } else {
+      return;
+    }
+  }
+
+  // Fonction permettant d'afficher des messages de façon modulaire
+  function afficherMessage(texte, type = "success", duree = 4000) {
+    message = { texte: texte, type };
+    setTimeout(() => (message = { texte: "", type: "" }), duree);
+  }
 </script>
 
 <div class="container">
@@ -120,23 +158,23 @@
 
   <button class="main-btn" on:click={creationListe}>➕ Créer une liste</button>
 
-  {#if message}
-    <div class="message" class:success={message === "Liste créée avec succès !"} class:error={message !== "Liste créée avec succès !"}>
-      {message}
+  {#if message.texte}
+    <div class="message" class:success={message.type === "success"} class:error={message.type === "error"}>
+      {message.texte}
     </div>
   {/if}
 
   {#if listes.length === 0}
-    <p class="info-text">Aucune liste pour le moment. Commencez par en créer une 👇</p>
+    <p class="info-text"> Aucune liste pour le moment. Commencez par en créer une. </p>
   {:else}
-    <p class="info-text">Appuyez sur une liste pour y accéder ou bien utilisez les actions ✏️ 🔁 🗑️</p>
+    <p class="info-text"> Appuyez sur une liste pour y accéder ou bien utilisez les actions ✏️ 🔁 🗑️ </p>
   {/if}
 
   <div class="card-container">
     {#each listes as liste (liste.id)}
-      <div class="card">
+      <div class="card" >
         <a href={`/liste/${liste.id}`} class="card-link">
-          <h2>{liste.nom}</h2>
+          <h2 class="titre_text">{liste.nom}</h2>
         </a>
         <div class="card-actions">
           <button on:click={() => modifierListe?.(liste)}>✏️</button>
@@ -154,7 +192,6 @@
   :root {
     font-family: "Poppins", sans-serif;
     --primary-color: #007aff;
-    --background-color: #f2f2f7;
     --text-color: #1c1c1e;
     --card-bg: #ffffff;
     --card-shadow: rgba(0, 0, 0, 0.05);
@@ -237,6 +274,11 @@
     transform: translateY(-3px);
   }
 
+  .titre_text:hover{
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  
   .card-link {
     text-decoration: none;
     color: var(--text-color);
